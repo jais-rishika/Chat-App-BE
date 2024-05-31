@@ -5,6 +5,7 @@ require("dotenv").config()
 //retrieve userId create new otp, set expiry time ,set otp in db
 exports.sendOTP =(email,otp,res)=>{
     //send mail to user
+    console.log(email)
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {

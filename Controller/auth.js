@@ -4,23 +4,22 @@ require("dotenv").config();
 const User=require("../Model/user")
 
 const otpGenerator=require("otp-generator")
+const crypto=require("crypto")
 //token creation
 const createToken=(userId)=>{
     return jwt.sign({userId},process.env.JWT_SECRET)
 }
 
 const filterObj=require("../utils/filterObj")
-
-const sendOtp = require("../services/MailService/OTPmailService");
+const {sendOTP}= require("../services/MailService/OTPmailService")
 const sendPasswordResetEmail = require("../services/MailService/passwordResetMailService");
 
 //register
 //retrieve email and password ,filterbody to send, check if existing user ,if and also verified then error, else update
 exports.register=async (req,res,next)=>{
     try{
-    const { email, password } = req.body;
+    const { email } = req.body;
     console.log(email)
-    console.log(password)
     const filterBody = filterObj(req.body, "email", "password");
     const existingUser=await User.findOne({email:email})
     console.log(existingUser);
@@ -55,16 +54,19 @@ exports.register=async (req,res,next)=>{
 //send otp
 //retrieve userId create new otp, set expiry time ,set otp in db
 exports.sendOTP =async(req,res,next)=>{
-    const {userId}=req.body;
+    const userId=req.userId;
+    console.log(userId)
     const new_otp=otpGenerator.generate(6,{
         upperCaseAlphabets: false,
         lowerCaseAlphabets: false,
         specialChars: false, 
     })
-    const otp_expiry_time=Date.now()+10*60*1000;
+    console.log(new_otp)
+    const otp_expiry_time=Date.now() + 10 * 60 * 1000;
+    console.log(otp_expiry_time)
     const user=await User.findByIdAndUpdate(userId,{
         otp: new_otp,
-        otp_expiry_time,
+        otpExpires: otp_expiry_time,
     })
     user.otp=new_otp.toString()
     await user.save({
@@ -74,7 +76,8 @@ exports.sendOTP =async(req,res,next)=>{
    
     //send mail to user
     try{
-        sendOtp(user.email,user.otp,res);
+        console.log(user.email +" "+user.otp+" "+res)
+        sendOTP(user.email,new_otp,res);
     }
     catch{
         return res.status(502).json({
@@ -89,22 +92,27 @@ exports.sendOTP =async(req,res,next)=>{
 //retrieve email and otp ,find user thorough email and if not expired, compareOTP, if coreect make verified user
 exports.verifyOTP=async(req,res,next)=>{
     const {email,otp}=req.body
-    const user=await User.find({
+    const user=await User.findOne({
         email: email,
-        otpExpires: {$gt: Date.now}
+        otpExpires: {$gt: Date.now()}
     })
+    console.log(user)
     if(!user){
+        console.log("hello1")
         return res.status(403).json({
             status: "error",
             message: "Invalid Email or OTP expired"
         })
     }
-    if(!(await user.compareOTP(otp,user.otp))){
+    if(!(await user.CompareOTP(otp,user.otp))){
+        console.log("hello2")
         return res.status(403).json({
             status: "error",
             message: "Invalid or expired OTP "
         })
     }
+    
+    console.log("this")
     user.verified=true;
     user.otp=undefined;
 }
@@ -114,7 +122,6 @@ exports.verifyOTP=async(req,res,next)=>{
 exports.login=async (req,res,next)=>{
     const {email,password}=req.body;
     const user=await User.findOne({email:email}).select("+password")
-    console.log(User)
     if(!user|| !(await user.ComparePassword(password,user.password))){
         return res.status(403).json({
             status: "error",
@@ -195,4 +202,51 @@ exports.resetPassword=async()=>{
         token
     })
 
+}
+
+exports.CreateProfile=async(req,res,next)=>{
+    const {name,about,email,image}=req.body;
+    try{
+        const user=await User.findOne({email: email})
+        if(!user){
+            return res.status(403).json({
+                status: "error",
+                message: "Something went wrong"
+            }) 
+        }
+        if(image){
+            const uploadImage= await cloudinary.uploader.upload(image,{
+                folder: "profile",
+            })
+            if(!uploadImage.secure_url){
+                return res.status(503).json({
+                    status: "error",
+                    message: "Failed to upload the image,Please try again"
+                })
+            }
+            user.imageUrl=uploadImage.secure_url;
+        }
+        user.name=name;
+        user.about=about;
+
+        await user.save();
+        let url;
+        if(user.imageUrl){
+            url=user.imageUrl
+        }
+        return res.status(200).json({
+            status: "success",
+            message: "image successfully uploaded",
+            name,
+            about,
+            url
+        })
+    }
+    catch(err){
+        console.log(err)
+        return res.status(503).json({
+            status: "error",
+            message: "Some error occured"
+        })
+    }
 }

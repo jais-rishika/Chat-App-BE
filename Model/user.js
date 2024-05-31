@@ -3,10 +3,7 @@ const bcrypt=require("bcrypt")
 const crypto=require("crypto")
 const userSchema=new mongoose.Schema(
     {
-        first_name:{
-            type: String
-        },
-        last_name:{
+        name:{
             type: String
         },
         imageUrl:{
@@ -60,13 +57,13 @@ const userSchema=new mongoose.Schema(
             default: false
         },
         otp:{
-            type: Number
+            type: String
         },
         otpExpires:{
             type: Date
-        }
-
-    }
+        },
+    },
+        { timestamps: true },
 )
 
 userSchema.pre("save", async function (next) {
@@ -111,10 +108,11 @@ userSchema.methods.createPasswordResetToken=async function(){
     .digest("hex")
 
     this.passwordResetExpires= Date.now() + 10*60*1000;
-    return this.passwordResetToken;
+    return passwordResetToken;
 }
 
 userSchema.methods.CompareOTP =async function(candidateOTP,userOTP){
+    console.log("Compare")
     return await bcrypt.compare(candidateOTP,userOTP)
 }
 
