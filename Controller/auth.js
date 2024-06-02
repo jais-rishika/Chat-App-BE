@@ -2,7 +2,7 @@
 const jwt=require("jsonwebtoken");
 require("dotenv").config();
 const User=require("../Model/user")
-
+const cloudinary=require("cloudinary")
 const otpGenerator=require("otp-generator")
 const crypto=require("crypto")
 //token creation
@@ -19,10 +19,8 @@ const sendPasswordResetEmail = require("../services/MailService/passwordResetMai
 exports.register=async (req,res,next)=>{
     try{
     const { email } = req.body;
-    console.log(email)
     const filterBody = filterObj(req.body, "email", "password");
     const existingUser=await User.findOne({email:email})
-    console.log(existingUser);
     if(existingUser && existingUser.verified){
         return res.status(403).json({
             status: "Error",
@@ -55,15 +53,13 @@ exports.register=async (req,res,next)=>{
 //retrieve userId create new otp, set expiry time ,set otp in db
 exports.sendOTP =async(req,res,next)=>{
     const userId=req.userId;
-    console.log(userId)
     const new_otp=otpGenerator.generate(6,{
         upperCaseAlphabets: false,
         lowerCaseAlphabets: false,
         specialChars: false, 
     })
-    console.log(new_otp)
+    
     const otp_expiry_time=Date.now() + 10 * 60 * 1000;
-    console.log(otp_expiry_time)
     const user=await User.findByIdAndUpdate(userId,{
         otp: new_otp,
         otpExpires: otp_expiry_time,
@@ -111,10 +107,19 @@ exports.verifyOTP=async(req,res,next)=>{
             message: "Invalid or expired OTP "
         })
     }
+    const token=createToken(user._id);
     
-    console.log("this")
     user.verified=true;
     user.otp=undefined;
+    user.otpExpires=undefined;
+
+    await user.save()
+    return res.status(200).json({
+        status: "success",
+        message: "You are verified user now",
+        token
+    })
+    
 }
 
 //login
@@ -217,6 +222,7 @@ exports.CreateProfile=async(req,res,next)=>{
         if(image){
             const uploadImage= await cloudinary.uploader.upload(image,{
                 folder: "profile",
+                max_image_size: 1000000 // 1 MB
             })
             if(!uploadImage.secure_url){
                 return res.status(503).json({

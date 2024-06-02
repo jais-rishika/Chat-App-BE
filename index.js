@@ -35,7 +35,7 @@ app.use(
         parameterLimit: 100000000,
     })
 )
-app.use(express.json({limit: "10kb"}))
+app.use(express.json({limit: "2mb"}))
 app.use("/api/v1", routes);
 const limiter=rateLimit({
     max: 4000,
