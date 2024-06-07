@@ -133,11 +133,18 @@ exports.login=async (req,res,next)=>{
             message: "invalid credentials"
         })
     }
+    const image=await User.findOne({email:email}).select("+image")
+    const url=image.imageUrl
+    const name=await User.findOne({email:email}).select("+name")
+    const about=await User.findOne({email:email}).select("+about")
     const token=createToken(user._id);
         return res.status(200).json({
         status: "success",
         message: "Logged in successfully",
-        token
+        token,
+        name,
+        about,
+        url
     })
 }
 
@@ -234,7 +241,7 @@ exports.CreateProfile=async(req,res,next)=>{
         }
         user.name=name;
         user.about=about;
-
+        console.log("name: "+name+" about: "+about)
         await user.save();
         let url;
         if(user.imageUrl){
