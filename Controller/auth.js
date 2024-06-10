@@ -135,15 +135,16 @@ exports.login=async (req,res,next)=>{
     }
     const image=await User.findOne({email:email}).select("+image")
     const url=image.imageUrl
-    const name=await User.findOne({email:email}).select("+name")
+    const username=await User.findOne({email:email}).select("+name")
     const about=await User.findOne({email:email}).select("+about")
+    console.log(username+" "+about)
     const token=createToken(user._id);
         return res.status(200).json({
         status: "success",
         message: "Logged in successfully",
         token,
-        name,
-        about,
+        name: username.name,
+        about: about.about,
         url
     })
 }
