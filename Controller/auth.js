@@ -12,7 +12,7 @@ const createToken=(userId)=>{
 
 const filterObj=require("../utils/filterObj")
 const {sendOTP}= require("../services/MailService/OTPmailService")
-const sendPasswordResetEmail = require("../services/MailService/passwordResetMailService");
+const {sendPasswordResetEmail} = require("../services/MailService/passwordResetMailService");
 
 //register
 //retrieve email and password ,filterbody to send, check if existing user ,if and also verified then error, else update
@@ -151,7 +151,7 @@ exports.login=async (req,res,next)=>{
 
 exports.forgetPassword=async(req,res,next)=>{
     const {email}=req.body;
-    const user= User.findOne({email})
+    const user= await User.findOne({email})
 
     if(!user){
         return res.status(404).json({
@@ -160,17 +160,17 @@ exports.forgetPassword=async(req,res,next)=>{
         })
     }
 
-    const resetToken= await user.createPasswordResetToken();
-    await User.save({validateBeforeSave: false })
+    const resetToken= await user.CreatePasswordResetToken();
+    await user.save({validateBeforeSave: false })
+    const reseturl=`http://localhost:3000/auth/new-password/?code=${resetToken}`;
     try{
-        const reseturl=`http:localhost:3000/auth/reset-password/code=${resetToken}`;
         sendPasswordResetEmail(email,reseturl,res)
     }
     catch(err){
         user.passwordResetToken=undefined
         passwordResetExpires = undefined;
 
-        await User.save({validateBeforeSave: false })
+        await user.save({validateBeforeSave: false })
         
         return res.status(502).json({
             status: "error",
@@ -179,28 +179,25 @@ exports.forgetPassword=async(req,res,next)=>{
     }
 }
 
-exports.resetPassword=async()=>{
+exports.resetPassword=async(req,res)=>{
     //get user on basis of their token
-    const hashedToken= crypto
-    .createHash("SHA256")
+    const hashedToken = crypto
+    .createHash("sha256")
     .update(req.body.token)
-    .digest("hex")
+    .digest("hex");
 
     const user= await User.findOne({
-        passwordResetToken: hashedToken,
-        passwordResetExpires: {$gt: Date.now()}
+        passwordResetToken: hashedToken
+        // passwordResetTokenExpires: {$gt: Date.now()}
     })
-
     //if user not found
+
     if(!user){
         return res.status(403).json({
             status: "error",
             message: "Something went wrong"
         })
     }
-
-    //send mail to user
-
     //update the password
     user.password=req.body.password;
     user.passwordResetToken=undefined

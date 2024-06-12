@@ -3,7 +3,8 @@ const nodemailer=require("nodemailer")
 const resetTemplate=require("../../Templates/Mail/passwordResetTemplate")
 
 require("dotenv").config()
-const sendPasswordResetEmail=(email,reseturl,res)=>{
+exports.sendPasswordResetEmail=(email,reseturl,res)=>{
+    console.log("gmail"+ email)
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
@@ -15,7 +16,7 @@ const sendPasswordResetEmail=(email,reseturl,res)=>{
         from: "404backend@gmail.com",
         to: email,
         subject: "Request for Password Reset",
-        html: resetTemplate(user.email,reseturl),
+        html: resetTemplate(email,reseturl),
     }
     
     transporter.sendMail(mailOptions,function(err,info){
@@ -35,5 +36,5 @@ const sendPasswordResetEmail=(email,reseturl,res)=>{
         }
     })
 }
-module.exports=sendPasswordResetEmail;
+
 

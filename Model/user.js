@@ -99,17 +99,18 @@ userSchema.methods.ComparePassword = async function (
     return await bcrypt.compare(candidatePassword, userPassword);
   };
 
-userSchema.methods.createPasswordResetToken=async function(){
-    //random bytes-> pseudo random data
-    const resetPasswordToken=crypto.randomBytes(32).toString("hex")
-    this.passwordResetToken= crypto
-    .createHash("Sha256")
-    .update(resetPasswordToken)
-    .digest("hex")
-
-    this.passwordResetExpires= Date.now() + 10*60*1000;
-    return passwordResetToken;
-}
+userSchema.methods.CreatePasswordResetToken = async function () {
+    const resetToken = crypto.randomBytes(32).toString("hex");
+  
+    this.passwordResetToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+  
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  
+    return resetToken;
+  };
 
 userSchema.methods.CompareOTP =async function(candidateOTP,userOTP){
     console.log("Compare")
