@@ -4,7 +4,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "server-prod": "node index.js",
+    "server-dev": "npx nodemon index.js",
+    "client": "npm start --prefix ../Chat-App",
+    "dev": "concurrently --kill-others-on-fail \"npm run server-dev\" \"npm run client\""
   },
   "keywords": [],
   "author": "",
@@ -13,6 +17,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.2.0",
+    "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
@@ -27,6 +32,8 @@
     "nodemailer": "^6.9.13",
     "nodemon": "^3.1.0",
     "npm": "^10.7.0",
-    "otp-generator": "^4.0.1"
+    "otp-generator": "^4.0.1",
+    "raw-body": "^2.5.2",
+    "socket.io": "^4.7.5"
   }
 }

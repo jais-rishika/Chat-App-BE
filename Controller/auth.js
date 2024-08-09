@@ -72,7 +72,6 @@ exports.sendOTP =async(req,res,next)=>{
    
     //send mail to user
     try{
-        console.log(user.email +" "+user.otp+" "+res)
         sendOTP(user.email,new_otp,res);
     }
     catch{
@@ -92,7 +91,6 @@ exports.verifyOTP=async(req,res,next)=>{
         email: email,
         otpExpires: {$gt: Date.now()}
     })
-    console.log(user)
     if(!user){
         console.log("hello1")
         return res.status(403).json({
@@ -133,11 +131,10 @@ exports.login=async (req,res,next)=>{
             message: "invalid credentials"
         })
     }
-    const image=await User.findOne({email:email}).select("+image")
+    const image=await User.findOne({email:email}).select("+imageUrl")
     const url=image.imageUrl
     const username=await User.findOne({email:email}).select("+name")
     const about=await User.findOne({email:email}).select("+about")
-    console.log(username+" "+about)
     const token=createToken(user._id);
         return res.status(200).json({
         status: "success",
@@ -145,6 +142,8 @@ exports.login=async (req,res,next)=>{
         token,
         name: username.name,
         about: about.about,
+        email,
+        user_id: user._id,
         url
     })
 }
@@ -221,7 +220,7 @@ exports.CreateProfile=async(req,res,next)=>{
         if(!user){
             return res.status(403).json({
                 status: "error",
-                message: "Something went wrong"
+                message: "User not found"
             }) 
         }
         if(image){
@@ -239,7 +238,6 @@ exports.CreateProfile=async(req,res,next)=>{
         }
         user.name=name;
         user.about=about;
-        console.log("name: "+name+" about: "+about)
         await user.save();
         let url;
         if(user.imageUrl){
@@ -250,7 +248,8 @@ exports.CreateProfile=async(req,res,next)=>{
             message: "image successfully uploaded",
             name,
             about,
-            url
+            url,
+            user_id:user._id
         })
     }
     catch(err){
